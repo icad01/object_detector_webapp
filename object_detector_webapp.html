@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>זיהוי עצמים בקול</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.13.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <style>
+    video {
+      width: 100%;
+      max-width: 400px;
+      border: 2px solid black;
+    }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>זיהוי עצמים בקול</h1>
+  <video id="video" autoplay muted playsinline></video>
+  <script>
+    const video = document.getElementById('video');
+    let model;
+    let lastSaid = new Set();
+
+    const translate = {
+      'chair': 'כיסא',
+      'table': 'שולחן',
+      'tv': 'טלוויזיה',
+      'couch': 'ספה',
+      'bed': 'מיטה',
+      'sink': 'כיור',
+      'refrigerator': 'מקרר',
+      'person': 'אדם',
+      'bottle': 'בקבוק',
+      'cup': 'כוס'
+    };
+
+    async function initCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    }
+
+    async function detectFrame() {
+      if (!model) return;
+      const predictions = await model.detect(video);
+      for (const item of predictions) {
+        const label = item.class;
+        if (translate[label] && !lastSaid.has(label)) {
+          speak(translate[label]);
+          lastSaid.add(label);
+          if (lastSaid.size > 10) lastSaid.clear();
+        }
+      }
+      setTimeout(detectFrame, 700);
+    }
+
+    function speak(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'he-IL';
+      speechSynthesis.speak(utter);
+    }
+
+    cocoSsd.load().then(loadedModel => {
+      model = loadedModel;
+      initCamera().then(() => {
+        detectFrame();
+      });
+    });
+  </script>
+</body>
+</html>
