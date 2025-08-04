@@ -42,6 +42,13 @@
     async function initCamera() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
+
+      return new Promise(resolve => {
+        video.onloadedmetadata = () => {
+          video.play();
+          resolve();
+        };
+      });
     }
 
     async function detectFrame() {
@@ -60,7 +67,10 @@
 
     function speak(text) {
       const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = 'he-IL';
+      utter.lang = 'he';
+      utter.volume = 1;
+      utter.rate = 1;
+      speechSynthesis.cancel();
       speechSynthesis.speak(utter);
     }
 
